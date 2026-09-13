@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>运维智能问答助手</title>
+<style>
+:root {
+  --primary: #4A6CF7;
+  --primary-light: #6B8AFF;
+  --primary-dark: #3451D4;
+  --bg: #F5F7FA;
+  --card-bg: #FFFFFF;
+  --text: #1A1A2E;
+  --text-secondary: #6B7280;
+  --border: #E5E7EB;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --shadow-hover: 0 4px 20px rgba(74,108,247,0.15);
+  --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #fff;
+  padding: 32px 20px 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  top: -50%; right: -20%;
+  width: 400px; height: 400px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 50%;
+}
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: -30%; left: -10%;
+  width: 300px; height: 300px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 50%;
+}
+.header h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; position: relative; z-index:1; }
+.header p { font-size: 13px; opacity: 0.85; position: relative; z-index:1; }
+.search-section {
+  max-width: 760px;
+  margin: -20px auto 0;
+  padding: 0 16px;
+  position: relative;
+  z-index: 10;
+}
+.search-box {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.search-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 14px 16px;
+  font-size: 15px;
+  background: transparent;
+  color: var(--text);
+}
+.search-box input::placeholder { color: #B0B7C3; }
+.search-btn {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+.search-btn:hover { background: var(--primary-dark); }
+.search-btn.community {
+  background: #fff;
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+}
+.search-btn.community:hover { background: #F0F4FF; }
+.tabs {
+  max-width: 760px;
+  margin: 20px auto 0;
+  padding: 0 16px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.tab {
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border);
+  white-space: nowrap;
+}
+.tab:hover { border-color: var(--primary-light); color: var(--primary); }
+.tab.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.results {
+  max-width: 760px;
+  margin: 16px auto 40px;
+  padding: 0 16px;
+}
+.result-count {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+.faq-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: all 0.25s;
+  border: 1px solid var(--border);
+}
+.faq-card:hover {
+  box-shadow: var(--shadow-hover);
+  border-color: var(--primary-light);
+  transform: translateY(-1px);
+}
+.faq-card.expanded { border-color: var(--primary); }
+.faq-q {
+  padding: 16px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.faq-q-icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: #EEF2FF;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.faq-q-text {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.5;
+}
+.faq-q-arrow {
+  color: var(--text-secondary);
+  font-size: 12px;
+  transition: transform 0.25s;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.faq-card.expanded .faq-q-arrow { transform: rotate(180deg); }
+.faq-a {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.faq-card.expanded .faq-a { max-height: 2000px; }
+.faq-a-inner {
+  padding: 0 20px 16px 60px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.75;
+}
+.faq-a-inner ul, .faq-a-inner ol { padding-left: 20px; margin: 6px 0; }
+.faq-a-inner li { margin-bottom: 4px; }
+.faq-a-inner strong { color: var(--text); font-weight: 600; }
+.faq-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+  font-weight: 500;
+}
+.tag-base { background: #E0F2FE; color: #0284C7; }
+.tag-flow { background: #FEF3C7; color: #B45309; }
+.tag-auth { background: #EDE9FE; color: #6D28D9; }
+.tag-contract { background: #DCFCE7; color: #16A34A; }
+.tag-biz { background: #FCE7F3; color: #BE185D; }
+.tag-voucher { background: #E0E7FF; color: #4338CA; }
+.tag-special { background: #FEE2E2; color: #B91C1C; }
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+.no-results .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+.no-results h3 { font-size: 16px; margin-bottom: 8px; color: var(--text); }
+.no-results p { font-size: 14px; margin-bottom: 16px; }
+.community-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.community-btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
+.footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.footer a { color: var(--primary); text-decoration: none; }
+mark { background: #FEF08A; color: #1A1A2E; padding: 1px 3px; border-radius: 2px; }
+@media (max-width: 600px) {
+  .header { padding: 24px 16px 24px; }
+  .header h1 { font-size: 18px; }
+  .header p { font-size: 12px; }
+  .search-box { flex-direction: column; gap: 8px; padding: 8px; }
+  .search-box input { width: 100%; text-align: center; }
+  .search-btn { width: 100%; margin-right: 0; }
+  .faq-a-inner { padding-left: 20px; }
+  .tabs { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>运维智能问答助手</h1>
+  <p>搜索常见运维问题，快速获取解决方案</p>
+</div>
+
+<div class="search-section">
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="输入关键词搜索，如：供应商审核、凭证、发票..." autofocus>
+    <button class="search-btn community" onclick="searchCommunity()">搜云社区</button>
+    <button class="search-btn" onclick="performSearch()">搜索</button>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-cat="all" onclick="selectCategory('all')">全部</div>
+  <div class="tab" data-cat="基础资料" onclick="selectCategory('基础资料')">基础资料</div>
+  <div class="tab" data-cat="流程处理" onclick="selectCategory('流程处理')">流程处理</div>
+  <div class="tab" data-cat="权限" onclick="selectCategory('权限')">权限&人员</div>
+  <div class="tab" data-cat="合同" onclick="selectCategory('合同')">合同</div>
+  <div class="tab" data-cat="业务" onclick="selectCategory('业务')">业务</div>
+  <div class="tab" data-cat="凭证" onclick="selectCategory('凭证')">凭证</div>
+  <div class="tab" data-cat="特殊" onclick="selectCategory('特殊')">特殊事项</div>
+</div>
+
+<div class="results" id="results">
+  <div class="result-count" id="resultCount"></div>
+  <div id="faqList"></div>
+</div>
+
+<div class="footer">
+  <p>未找到答案？可前往 <a href="https://vip.kingdee.com" target="_blank">金蝶云社区</a> 搜索更多问题</p>
+</div>
+
+<script>
+// ============================================================
+// FAQ Knowledge Base
+// q: 问题（纯文本，用于搜索和显示）
+// a: 答案（HTML格式，用于显示）
+// plainA: 答案的纯文本版本（用于搜索匹配）
+// ============================================================
+var faqData = [
+  { cat: "基础资料", catClass: "tag-base", q: "供应商审核失败，报错：推送NCC失败，失败原因:未知的错误!null", a: "<strong>检查事项：</strong><ol><li>客商是否关联了NCC客商编码</li><li>NCC客商是否关联</li><li>商务伙伴中的【NCC客商编码】是NCC的客户编码（非NCC供应商编码）</li><li>NCC返回主键是否正确</li></ol>", plainA: "检查事项：1.客商是否关联了NCC客商编码 2.NCC客商是否关联 3.商务伙伴中的NCC客商编码是NCC的客户编码（非NCC供应商编码）4.NCC返回主键是否正确" },
+  { cat: "基础资料", catClass: "tag-base", q: "供应商的银行信息录入错误，想删除但是删除不了", a: "<strong>解决方式：</strong>银行账户的默认键取消就可以删除了。", plainA: "解决方式：银行账户的默认键取消就可以删除了。" },
+  { cat: "基础资料", catClass: "tag-base", q: "影像一直上传不上去", a: "<strong>解决方式：</strong><ul><li>在影像映射维护中搜索单据编号，若影像状态是【影像已就绪】则点击废弃影像，再让经办人去上传影像</li><li>若影像状态是【无影像】，是因为没有上传封面，需要告诉经办人封面和附件要一起上传</li></ul>", plainA: "解决方式：在影像映射维护中搜索单据编号，若影像状态是影像已就绪则点击废弃影像，再让经办人去上传影像。若影像状态是无影像，是因为没有上传封面，需要告诉经办人封面和附件要一起上传。" },
+  { cat: "基础资料", catClass: "tag-base", q: "已审核单据如何打印影像封面", a: "<strong>解决方式：</strong>通过打印设置选择对应模板。", plainA: "解决方式：通过打印设置选择对应模板。" },
+  { cat: "基础资料", catClass: "tag-base", q: "某个字段是否必填？", a: "<strong>查看路径：</strong>智能核算机器人 &rarr; 显隐性配置 &rarr; 辅助核算项显隐性映射表", plainA: "查看路径：智能核算机器人 显隐性配置 辅助核算项显隐性映射表" },
+  { cat: "流程处理", catClass: "tag-flow", q: "下推失败: 基础资料未分配给目标组织", a: "<strong>问题：</strong>供应商未分配给目标组织使用。<br><strong>解决方式：</strong><ol><li>审核该供应商</li><li>审核成功后点击重新激活【流程实例 &rarr; 显示错误信息 &rarr; 重新激活】</li></ol>", plainA: "问题：供应商未分配给目标组织使用。解决方式：1.审核该供应商 2.审核成功后点击重新激活 流程实例 显示错误信息 重新激活" },
+  { cat: "流程处理", catClass: "tag-flow", q: "财务应收单关联预收款单结算金额不足", a: "<strong>问题：</strong>应收单关联预收款单有一个字段是【本次结算金额】，若该收款单只剩100可以结算，但此处填了120，就会挂起。<br><strong>解决方式：</strong><ol><li>查询该收款单的结算记录</li><li>联系结算人员，告知其情况</li></ol>", plainA: "问题：应收单关联预收款单有一个字段是本次结算金额，若该收款单只剩100可以结算，但此处填了120，就会挂起。解决方式：1.查询该收款单的结算记录 2.联系结算人员，告知其情况" },
+  { cat: "流程处理", catClass: "tag-flow", q: "数据校验发现错误：银行状态必须为已提交才能审核", a: "<strong>问题：</strong>一般这种提示是因为这个单据已经审核过了但是推送NCC失败。<br><strong>解决方式：</strong><ol><li>查看该单据的单据状态是否是【已审核】</li><li>若是已审核，查看推送NCC是否成功</li><li>若是已审核但推送NCC失败，则发给陈福东处理</li></ol>", plainA: "问题：一般这种提示是因为这个单据已经审核过了但是推送NCC失败。解决方式：1.查看该单据的单据状态是否是已审核 2.若是已审核，查看推送NCC是否成功 3.若是已审核但推送NCC失败，则发给陈福东处理" },
+  { cat: "流程处理", catClass: "tag-flow", q: "提交时提示明细行数据异常（多行数据一致）", a: "<strong>问题：</strong>应付单明细行存在多行，且各行数据一模一样；当数据都一致时只需要一个明细行。<br><strong>解决方式：</strong><ol><li>强制终止流程（流程实例 &rarr; 强制终止流程）</li><li>合并填写一致的明细数据</li><li>重新提交</li></ol>", plainA: "问题：应付单明细行存在多行，且各行数据一模一样；当数据都一致时只需要一个明细行。解决方式：1.强制终止流程 2.合并填写一致的明细数据 3.重新提交" },
+  { cat: "流程处理", catClass: "tag-flow", q: "实物卡片挂起，错误信息显示折旧凭证已生成", a: "<strong>解决方式：</strong>联系共享财务将本月的折旧凭证删除，删除后点击【重新激活】即可。", plainA: "解决方式：联系共享财务将本月的折旧凭证删除，删除后点击重新激活即可。" },
+  { cat: "权限", catClass: "tag-auth", q: "需要增加兼职", a: "按系统流程操作增加兼职人员。", plainA: "按系统流程操作增加兼职人员。" },
+  { cat: "权限", catClass: "tag-auth", q: "财务有开票申请单下查权限，但点下查显示没有权限", a: "<strong>原因：</strong>入口错误，应该从【应收】模块进去。遇到其他问题同理，可以看看模块是否正确。", plainA: "原因：入口错误，应该从应收模块进去。遇到其他问题同理，可以看看模块是否正确。" },
+  { cat: "权限", catClass: "tag-auth", q: "需要增加部门", a: "按系统操作流程增加部门。", plainA: "按系统操作流程增加部门。" },
+  { cat: "合同", catClass: "tag-contract", q: "已经审核完成的合同，合同类型选错", a: "<strong>处理方式：</strong><ol><li>找业财反审核，变为暂存后删除该合同（若提示合同档案引用了此数据不能删除，则先让财务删除合同档案）</li><li>重新录入正确的合同类型</li></ol><strong>注意：</strong>若该合同已经下推过单据了，则无法修改。", plainA: "处理方式：1.找业财反审核，变为暂存后删除该合同（若提示合同档案引用了此数据不能删除，则先让财务删除合同档案）2.重新录入正确的合同类型。注意：若该合同已经下推过单据了，则无法修改。" },
+  { cat: "业务", catClass: "tag-biz", q: "采购转固单显示审核了，但应付单关联不到资产卡片", a: "<strong>转固流程：</strong>采购转固单 &rarr; 实物卡片 &rarr; 财务卡片 &rarr; 应付单关联财务卡片。<br><strong>原因：</strong>若选不到就是这三张单据中有其中一个没有审核完（采购转固单、实物卡片、财务卡片）。", plainA: "转固流程：采购转固单 实物卡片 财务卡片 应付单关联财务卡片。原因：若选不到就是这三张单据中有其中一个没有审核完（采购转固单、实物卡片、财务卡片）。" },
+  { cat: "业务", catClass: "tag-biz", q: "应付单和付款申请单：什么时候填应付单，什么时候填付款申请单", a: "<ul><li>没发票填付款申请单，走预付，等到票后填应付单冲预付款单</li><li>有发票填应付单</li></ul>", plainA: "没发票填付款申请单，走预付，等到票后填应付单冲预付款单。有发票填应付单。" },
+  { cat: "业务", catClass: "tag-biz", q: "资产信息分录存在多个资产类别不一致", a: "<strong>解决方式：</strong>图片中的这两个位置的资产类别要保持一致。", plainA: "解决方式：图片中的这两个位置的资产类别要保持一致。" },
+  { cat: "业务", catClass: "tag-biz", q: "手工结算时两张单据供应商或客户不一致", a: "<strong>解决方式：</strong>在匹配条件处更改为按币种相同。", plainA: "解决方式：在匹配条件处更改为按币种相同。" },
+  { cat: "业务", catClass: "tag-biz", q: "序时账在哪导", a: "<strong>操作路径：</strong>总账 &rarr; 凭证里全选凭证，导出即可。", plainA: "操作路径：总账 凭证里全选凭证，导出即可。" },
+  { cat: "业务", catClass: "tag-biz", q: "退票流程（付款失败有收款流水）", a: "按退票流程操作处理。", plainA: "按退票流程操作处理。" },
+  { cat: "业务", catClass: "tag-biz", q: "应付单关闭后，需要发票解绑", a: "<ol><li>需告诉经办人以后不能这样操作，关闭是指这笔业务不付款了，如果还需要进行同样的业务，是点【全额红冲】</li><li>如果已经点了【关闭】，需到【全票池查询】通过发票号码查询到【业务单据】</li><li>复制业务单据单据号去发票解绑中进行解绑</li><li>在全票池中点击【删除】</li></ol>", plainA: "1.需告诉经办人以后不能这样操作，关闭是指这笔业务不付款了，如果还需要进行同样的业务，是点全额红冲 2.如果已经点了关闭，需到全票池查询通过发票号码查询到业务单据 3.复制业务单据单据号去发票解绑中进行解绑 4.在全票池中点击删除" },
+  { cat: "业务", catClass: "tag-biz", q: "车船税发票无法识别", a: "<strong>原因：</strong>车船税在发票里是在备注栏，所以发票无法识别。<br><strong>解决方式：</strong>让经办人新增一行明细，业务项目选择车船税，将发票导入附件。", plainA: "原因：车船税在发票里是在备注栏，所以发票无法识别。解决方式：让经办人新增一行明细，业务项目选择车船税，将发票导入附件。" },
+  { cat: "业务", catClass: "tag-biz", q: "银行账户信息修改", a: "<strong>操作路径：</strong>系统首页 &rarr; 财务云 &rarr; 资金 &rarr; 账户设置 &rarr; 银行账户<br><strong>审批流：</strong>业务财务 &rarr; 财务经理 &rarr; 集团共享中心（若审批流异常挂起，联系金蝶维护）", plainA: "操作路径：系统首页 财务云 资金 账户设置 银行账户。审批流：业务财务 财务经理 集团共享中心（若审批流异常挂起，联系金蝶维护）" },
+  { cat: "业务", catClass: "tag-biz", q: "查看是否有结算记录或是否结算成功", a: "在系统中查询结算记录确认。", plainA: "在系统中查询结算记录确认。" },
+  { cat: "业务", catClass: "tag-biz", q: "应付单反写支出合同:待支付金额大于了合同金额", a: "<strong>原因：</strong><ol><li>支出合同下推的应付单总额已经和支出合同总金额一致了，合同没有额度可以下推应付单了</li><li>支出合同的【已申请金额】在新增合同时经办人已经填写了，如果下查应付单发现应付金额不等于合同的已申请金额，就是这个原因</li></ol><strong>解决方式：</strong>让经办人走合同变更，变更【已申请金额】。", plainA: "原因：1.支出合同下推的应付单总额已经和支出合同总金额一致了，合同没有额度可以下推应付单了 2.支出合同的已申请金额在新增合同时经办人已经填写了，如果下查应付单发现应付金额不等于合同的已申请金额，就是这个原因。解决方式：让经办人走合同变更，变更已申请金额。" },
+  { cat: "业务", catClass: "tag-biz", q: "收款单共享有，但没有推送到NCC", a: "<strong>错误信息：</strong>NCC资金系统返回交易对象类型为客户时客户不能...<br><strong>原因：</strong>客户维护成了内部客商，需要维护成外部客商，然后找到收款单点击【NCC推送】。", plainA: "错误信息：NCC资金系统返回交易对象类型为客户时客户不能... 原因：客户维护成了内部客商，需要维护成外部客商，然后找到收款单点击NCC推送。" },
+  { cat: "业务", catClass: "tag-biz", q: "应付单上传发票显示发票号码:发票已存在，不允许采集", a: "<strong>原因：</strong>经办人点了关闭。", plainA: "原因：经办人点了关闭。" },
+  { cat: "业务", catClass: "tag-biz", q: "企业名字变更后，需要在系统修改什么", a: "<ol><li>发票云 &rarr; 基础资料 &rarr; 企业信息</li><li>基础服务云 &rarr; 基础资料 &rarr; 发票云配置（集团）</li><li>费用核算 &rarr; 发票云配置</li><li>系统开发岗：发票云 &rarr; 基础资料 &rarr; 缓存清理</li></ol>", plainA: "1.发票云 基础资料 企业信息 2.基础服务云 基础资料 发票云配置（集团）3.费用核算 发票云配置 4.系统开发岗：发票云 基础资料 缓存清理" },
+  { cat: "业务", catClass: "tag-biz", q: "如何通过认领处理单号或认领通知单号查收款单或付款单", a: "<strong>操作：</strong>需要复制认领通知单号去认领中心下查。", plainA: "操作：需要复制认领通知单号去认领中心下查。" },
+  { cat: "业务", catClass: "tag-biz", q: "发票识别错误，怎么处理", a: "<ol><li>全票池查询业务单据编号</li><li>发票解绑处解绑发票（前两项是为了让发票信息变成未用、未签收、未验状态）</li><li>让经办人重新上传发票，点编辑按钮，即可编辑发票</li></ol>", plainA: "1.全票池查询业务单据编号 2.发票解绑处解绑发票（前两项是为了让发票信息变成未用、未签收、未验状态）3.让经办人重新上传发票，点编辑按钮，即可编辑发票" },
+  { cat: "业务", catClass: "tag-biz", q: "如何反结账", a: "<ol><li><strong>停用对账：</strong>【初始化】&rarr;【对账启用设置】，点击停用对账</li><li><strong>对账反初始化：</strong>进入【初始化】&rarr;【对账初始化】，备份对账初始化数据后，在【结束初始化】按钮的下拉菜单中点击【反初始化】，即可修改对账初始化的数据。如果还需要继续做出纳反初始化，则需要将对账初始化数据删除。</li></ol>", plainA: "1.停用对账：初始化 对账启用设置，点击停用对账 2.对账反初始化：进入初始化 对账初始化，备份对账初始化数据后，在结束初始化按钮的下拉菜单中点击反初始化，即可修改对账初始化的数据。如果还需要继续做出纳反初始化，则需要将对账初始化数据删除。" },
+  { cat: "凭证", catClass: "tag-voucher", q: "未生成凭证", a: "<ol><li>单据列表查询单据，若预览凭证无误，运行凭证生成请求智能方案</li><li>预览凭证借贷不平，先检查流水是否匹配。通用付款申请单生成的付款单，如1张申请单生成3张付款单，通常3张付款单会生成一张凭证。如果借方比贷方多，一般是因为有单据流水没有匹配；如果借方比贷方少，那一般是因为流水交叉匹配了。</li></ol>", plainA: "1.单据列表查询单据，若预览凭证无误，运行凭证生成请求智能方案 2.预览凭证借贷不平，先检查流水是否匹配。通用付款申请单生成的付款单，如1张申请单生成3张付款单，通常3张付款单会生成一张凭证。如果借方比贷方多，一般是因为有单据流水没有匹配；如果借方比贷方少，那一般是因为流水交叉匹配了。" },
+  { cat: "凭证", catClass: "tag-voucher", q: "修改付款单凭证日期", a: "<ol><li>系统运维开发岗打开【取消付款】及【付款】按钮</li><li>系统运维岗打开系统参数</li><li>系统运维岗找到付款单，反复核、反审核凭证，在列表点【删除凭证】</li><li>系统运维岗在付款单点击【取消付款】，【付款】选择【付款日期】，付款日期即记账日期</li><li>系统运维岗预览凭证检查记账日期是否已修改成功</li><li>操作完成后系统运维和开发记得还原参数！</li></ol>", plainA: "1.系统运维开发岗打开取消付款及付款按钮 2.系统运维岗打开系统参数 3.系统运维岗找到付款单，反复核、反审核凭证，在列表点删除凭证 4.系统运维岗在付款单点击取消付款，付款选择付款日期，付款日期即记账日期 5.系统运维岗预览凭证检查记账日期是否已修改成功 6.操作完成后系统运维和开发记得还原参数" },
+  { cat: "凭证", catClass: "tag-voucher", q: "修改凭证现金流量查询", a: "<strong>操作：</strong>在【现金流量查询】中点击【设置现金流量】即可修改。", plainA: "操作：在现金流量查询中点击设置现金流量即可修改。" },
+  { cat: "特殊", catClass: "tag-special", q: "采购转固单填写错误，但已生成实物卡片、财务卡片，需逆向处理", a: "<ol><li>将财务卡片反审核，单据变为暂存</li><li>将实物卡片反审核，暂存的财务卡片会被自动删除，然后删除掉暂存的实物卡片</li><li>将采购转固单反审核</li></ol>", plainA: "1.将财务卡片反审核，单据变为暂存 2.将实物卡片反审核，暂存的财务卡片会被自动删除，然后删除掉暂存的实物卡片 3.将采购转固单反审核" },
+  { cat: "特殊", catClass: "tag-special", q: "认领处理单业务项目等选错，需要逆向处理（付款场景）", a: "<ol><li>系统运维开发岗打开【取消付款】按钮</li><li>系统运维岗找到付款单，反复核、反审核凭证，在列表点【删除凭证】</li><li>系统运维岗在付款单点击【取消付款】、反审核并删除付款单</li><li>系统开发岗去NCC删除付款结算单</li><li>系统运维岗在认领处理单上取消认领确认，驳回认领结果</li></ol><strong>注意：</strong>如果只涉及付款单处理，则完成前5项即可。", plainA: "1.系统运维开发岗打开取消付款按钮 2.系统运维岗找到付款单，反复核、反审核凭证，在列表点删除凭证 3.系统运维岗在付款单点击取消付款、反审核并删除付款单 4.系统开发岗去NCC删除付款结算单 5.系统运维岗在认领处理单上取消认领确认，驳回认领结果。注意：如果只涉及付款单处理，则完成前5项即可。" },
+  { cat: "特殊", catClass: "tag-special", q: "认领处理单业务项目等选错，需要逆向处理（收款场景）", a: "<ol><li>系统运维岗关掉智能方案JZJK_CAS_001</li><li>系统运维岗点击【取消收款】，反审核并删除收款单</li><li>系统开发岗在NCC删除收款结算单</li><li>系统运维岗取消认领确认，驳回认领结果</li></ol><strong>注意：</strong><ul><li>如果只涉及收款单处理，则完成前3项即可</li><li>若收款流水认领形成的收款单已退票退款且重新支付了，则不适用以上操作，需系统开发岗进行数据处理</li></ul>", plainA: "1.系统运维岗关掉智能方案JZJK_CAS_001 2.系统运维岗点击取消收款，反审核并删除收款单 3.系统开发岗在NCC删除收款结算单 4.系统运维岗取消认领确认，驳回认领结果。注意：如果只涉及收款单处理，则完成前3项即可。若收款流水认领形成的收款单已退票退款且重新支付了，则不适用以上操作，需系统开发岗进行数据处理。" },
+  { cat: "特殊", catClass: "tag-special", q: "修改凭证的现金流量", a: "同【修改凭证现金流量查询】操作（共享会计岗操作）。", plainA: "同修改凭证现金流量查询操作（共享会计岗操作）。" },
+  { cat: "特殊", catClass: "tag-special", q: "修改凭证的记账日期（付款单）", a: "同【修改付款单凭证日期】操作（系统运维岗操作）。", plainA: "同修改付款单凭证日期操作（系统运维岗操作）。" },
+  { cat: "特殊", catClass: "tag-special", q: "通用付款申请单付款账户错误，导致无法和流水匹配上", a: "<strong>解决方式：</strong>系统开发岗数据处理。", plainA: "解决方式：系统开发岗数据处理。" }
+];
+
+// ============================================================
+// State
+// ============================================================
+var currentCategory = 'all';
+var currentKeyword = '';
+
+// ============================================================
+// Search logic - 直接用纯文本匹配，不依赖 DOM 操作
+// ============================================================
+function performSearch() {
+  var input = document.getElementById('searchInput');
+  currentKeyword = input.value.trim().toLowerCase();
+  renderResults();
+}
+
+function selectCategory(cat) {
+  currentCategory = cat;
+  var tabs = document.querySelectorAll('.tab');
+  for (var i = 0; i < tabs.length; i++) {
+    if (tabs[i].getAttribute('data-cat') === cat) {
+      tabs[i].classList.add('active');
+    } else {
+      tabs[i].classList.remove('active');
+    }
+  }
+  renderResults();
+}
+
+function highlightKeyword(text, keyword) {
+  if (!keyword) return text;
+  try {
+    var escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var regex = new RegExp('(' + escaped + ')', 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
+  } catch(e) {
+    return text;
+  }
+}
+
+function renderResults() {
+  var filtered = [];
+  var i;
+  for (i = 0; i < faqData.length; i++) {
+    var item = faqData[i];
+    // 分类筛选
+    if (currentCategory !== 'all' && item.cat !== currentCategory) continue;
+    // 关键词筛选 - 直接用纯文本匹配
+    if (currentKeyword) {
+      var qLower = item.q.toLowerCase();
+      var aLower = item.plainA.toLowerCase();
+      if (qLower.indexOf(currentKeyword) === -1 && aLower.indexOf(currentKeyword) === -1) {
+        continue;
+      }
+    }
+    filtered.push(item);
+  }
+
+  var list = document.getElementById('faqList');
+  var count = document.getElementById('resultCount');
+
+  if (filtered.length === 0) {
+    count.textContent = '';
+    var searchVal = document.getElementById('searchInput').value.trim();
+    var communityUrl = 'https://vip.kingdee.com';
+    if (searchVal) {
+      communityUrl = 'https://vip.kingdee.com/search?q=' + encodeURIComponent(searchVal);
+    }
+    list.innerHTML = '<div class="no-results">' +
+      '<div class="icon">\uD83D\uDD0D</div>' +
+      '<h3>未找到相关答案</h3>' +
+      '<p>试试在金蝶云社区搜索更多问题</p>' +
+      '<a class="community-btn" href="' + communityUrl + '" target="_blank">' +
+      '前往金蝶云社区搜索</a></div>';
+    return;
+  }
+
+  count.textContent = '共找到 ' + filtered.length + ' 条结果';
+  var html = '';
+  for (i = 0; i < filtered.length; i++) {
+    var item = filtered[i];
+    var qDisplay = item.q;
+    if (currentKeyword) {
+      qDisplay = highlightKeyword(qDisplay, currentKeyword);
+    }
+    html += '<div class="faq-card" id="card-' + i + '" onclick="toggleCard(' + i + ')">' +
+      '<div class="faq-q">' +
+        '<div class="faq-q-icon">Q</div>' +
+        '<div class="faq-q-text">' + qDisplay + '<span class="faq-tag ' + item.catClass + '">' + item.cat + '</span></div>' +
+        '<div class="faq-q-arrow">\u25BC</div>' +
+      '</div>' +
+      '<div class="faq-a">' +
+        '<div class="faq-a-inner">' + item.a + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  list.innerHTML = html;
+}
+
+function toggleCard(idx) {
+  var card = document.getElementById('card-' + idx);
+  if (card) {
+    card.classList.toggle('expanded');
+  }
+}
+
+function searchCommunity() {
+  var keyword = document.getElementById('searchInput').value.trim();
+  if (keyword) {
+    window.open('https://vip.kingdee.com/search?q=' + encodeURIComponent(keyword), '_blank');
+  } else {
+    window.open('https://vip.kingdee.com', '_blank');
+  }
+}
+
+// ============================================================
+// Event listeners
+// ============================================================
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    performSearch();
+  }
+});
+
+document.getElementById('searchInput').addEventListener('input', function() {
+  currentKeyword = this.value.trim().toLowerCase();
+  renderResults();
+});
+
+// Initial render
+renderResults();
+</script>
+
+</body>
+</html>
